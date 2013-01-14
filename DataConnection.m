@@ -18,12 +18,22 @@
 
 #import "DataConnection.h"
 
+static NSString * const MimeTypeImage = @"image/jpeg";
+static NSString * const MimeTypeJson = @"application/json";
+static NSString * const MimeTypeForm = @"application/x-www-form-urlencoded";
+static NSString * const MimeTypeFormData = @"multipart/form-data; boundary=";
+static NSString * const BoundaryString = @"Data-Boundary-aWeGhdCVFFfsdrf";
+
+
 @interface DataConnection ()
 @property (atomic, readwrite)       BOOL            unauthorized;
 @property (nonatomic, readwrite)    NSString        *urlString;
 @property (nonatomic, readwrite)    NSMutableData   *connectionData;
 @property (atomic, readwrite)       NSArray         *resultObjects;
 @property (atomic, readwrite)       id              dataObject;
+
+@property (readwrite)               BOOL            didSucceed;
+@property (readwrite)               BOOL            didFinish;
 @end
 
 
@@ -32,6 +42,8 @@
 - (void)start {
     // schedule in commonModes runloop in order for the connection to execute even when the ui is responding to touches or doing a scroll
     [self scheduleInRunLoop:[NSRunLoop currentRunLoop] forMode:NSRunLoopCommonModes];
+    self.didFinish = NO;
+    self.didSucceed = NO;
     [super start];
 }
 
@@ -45,11 +57,77 @@
 
 + (DataConnection *)withURLString:(NSString *)urlString {
     NSMutableURLRequest *mr = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:urlString]];
+    mr.timeoutInterval = 10.f;
     mr.HTTPShouldUsePipelining = YES;
     mr.cachePolicy = NSURLRequestReturnCacheDataElseLoad;
     DataConnection *c = [self withRequest:mr];
     c.urlString = urlString;
     return c;
+}
+
++ (NSData *)postBodyWithParameters:(NSDictionary *)params {
+    NSMutableData *data = [NSMutableData data];
+    NSData *boundaryPrefix = [[NSString stringWithFormat:@"--%@", BoundaryString] dataUsingEncoding:NSUTF8StringEncoding];
+    NSData *separatorData = [@"\r\n" dataUsingEncoding:NSUTF8StringEncoding];
+    
+    for (NSString *key in params.allKeys) {
+        if (![key isKindOfClass:[NSString class]]) continue;
+        id val = params[key];
+        
+        NSData *contentDispoData = nil;
+        
+        if ([val isKindOfClass:[NSString class]]) {
+            contentDispoData = [[NSString stringWithFormat:@"Content-Disposition: form-data; name=\"%@\"", key] dataUsingEncoding:NSUTF8StringEncoding];
+        }
+        else {
+            NSLog(@"unexpected key type, skipping");
+            continue;
+        }
+        
+        [data appendData:boundaryPrefix];
+        [data appendData:separatorData];
+        [data appendData:contentDispoData];
+        [data appendData:separatorData];
+        [data appendData:separatorData];
+        [data appendData:[val dataUsingEncoding:NSUTF8StringEncoding]];
+        [data appendData:separatorData];
+        [data appendData:separatorData];
+    }
+    NSData *boundaryPost = [[NSString stringWithFormat:@"--%@--", BoundaryString] dataUsingEncoding:NSUTF8StringEncoding];
+    [data appendData:boundaryPost];
+    [data appendData:separatorData];
+    [data appendData:separatorData];
+    [data appendData:boundaryPost];
+    
+    return data;
+}
+
++ (DataConnection *)postConnectionWithUrlString:(NSString *)urlString andData:(NSData *)data {
+    NSMutableURLRequest *urlRequest = [[NSMutableURLRequest alloc] initWithURL:[NSURL URLWithString:urlString]];
+    [urlRequest setHTTPMethod:@"POST"];
+    NSString *contentLength = [NSString stringWithFormat:@"%d", data.length];
+    [urlRequest setValue:MimeTypeImage forHTTPHeaderField:@"Content-Type"];
+    [urlRequest setValue:contentLength forHTTPHeaderField:@"Content-Length"];
+    [urlRequest setHTTPBody:data];
+    return [[self alloc] initWithRequest:urlRequest];
+}
+
++ (NSString *)contentTypeForParams:(NSDictionary *)params {
+    return [NSString stringWithFormat:@"%@%@", MimeTypeFormData, BoundaryString];
+}
+
++ (DataConnection *)postConnectionWithUrlString:(NSString *)urlString andParams:(NSDictionary *)params {
+    
+    NSMutableURLRequest *urlRequest = [[NSMutableURLRequest alloc] initWithURL:[NSURL URLWithString:urlString]];
+    [urlRequest setHTTPMethod:@"POST"];
+    
+    NSData *dataForParams = [self postBodyWithParameters:params];
+    
+    [urlRequest setValue:[self contentTypeForParams:params] forHTTPHeaderField:@"Content-Type"];
+    [urlRequest setValue:[NSString stringWithFormat:@"%d", dataForParams.length] forHTTPHeaderField:@"Content-Length"];
+    [urlRequest setHTTPBody:dataForParams];
+    
+    return [[self alloc] initWithRequest:urlRequest];
 }
 
 + (DataConnection *)withRequest:(NSURLRequest *)request {
@@ -76,8 +154,15 @@
     return nil;
 }
 
+- (void)connection:(NSURLConnection *)connection didFailWithError:(NSError *)error {
+    self.didSucceed = NO;
+    self.didFinish = YES;
+    [self executeCompletion];
+}
 
 - (void)connectionDidFinishLoading:(NSURLConnection *)connection {
+    self.didSucceed = YES;
+    self.didFinish = YES;
     if (self.dataBlock != nil) {
         [self performSelectorInBackground:@selector(executeData) withObject:nil];
     }

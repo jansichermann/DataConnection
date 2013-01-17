@@ -49,4 +49,11 @@ typedef void(^CompletionBlock)(id c);       // c is the connection, we use id fo
 + (DataConnection *)postConnectionWithUrlString:(NSString *)urlString andData:(NSData *)data;
 + (DataConnection *)postConnectionWithUrlString:(NSString *)urlString andParams:(NSDictionary *)params;
 - (void)cancelAndClear;
+
+@end
+
+
+@protocol PostableData <NSObject>
+- (NSString *)mimeType;
+- (NSString *)fileName;
 @end

@@ -74,25 +74,60 @@ static NSString * const BoundaryString = @"Data-Boundary-aWeGhdCVFFfsdrf";
         if (![key isKindOfClass:[NSString class]]) continue;
         id val = params[key];
         
-        NSData *contentDispoData = nil;
-        
-        if ([val isKindOfClass:[NSString class]]) {
-            contentDispoData = [[NSString stringWithFormat:@"Content-Disposition: form-data; name=\"%@\"", key] dataUsingEncoding:NSUTF8StringEncoding];
-        }
-        else {
-            NSLog(@"unexpected key type, skipping");
+        if (![val isKindOfClass:[NSString class]] &&
+            ![val conformsToProtocol:@protocol(PostableData)]) {
+            NSLog(@"value for key %@ is of an unexpected type, skipping!", key);
             continue;
         }
         
-        [data appendData:boundaryPrefix];
-        [data appendData:separatorData];
-        [data appendData:contentDispoData];
-        [data appendData:separatorData];
-        [data appendData:separatorData];
-        [data appendData:[val dataUsingEncoding:NSUTF8StringEncoding]];
-        [data appendData:separatorData];
-        [data appendData:separatorData];
+        NSData *contentDispoData = nil;
+        NSData *contentTypeData = nil;
+        NSData *contentTransferEncodingData = nil;
+        NSData *objectData = nil;
+        
+        NSString *contentDispoString = [NSString stringWithFormat:@"Content-Disposition: form-data; name=\"%@\"", key];
+        
+        if ([val isKindOfClass:[NSString class]]) {
+            objectData = [val dataUsingEncoding:NSUTF8StringEncoding];
+        }
+        else if ([val conformsToProtocol:@protocol(PostableData)] &&
+                 ([val isKindOfClass:[NSData class]] || [[val class] isSubclassOfClass:[NSData class]])
+                 ) {
+            
+            NSData<PostableData> *postableData = val;
+            
+            objectData = postableData;
+            
+            contentDispoString = [contentDispoString stringByAppendingFormat:@"; filename=%@", postableData.fileName]; // some filename
+            contentTypeData = [postableData.mimeType dataUsingEncoding:NSUTF8StringEncoding];
+            contentTransferEncodingData = [@"binary" dataUsingEncoding:NSUTF8StringEncoding];
+            
+        }
+        else {
+            NSAssert(NO, @"This should never happen!");
+        }
+        
+        contentDispoData = [contentDispoString dataUsingEncoding:NSUTF8StringEncoding];
+        
+        // last sanity check
+        if (objectData != nil) {
+            [data appendData:boundaryPrefix];
+            [data appendData:separatorData];
+            [data appendData:contentDispoData];
+            if (contentTypeData) {
+                [data appendData:contentTypeData];
+            }
+            if (contentTransferEncodingData) {
+                [data appendData:contentTransferEncodingData];
+            }
+            [data appendData:separatorData];
+            [data appendData:separatorData];
+            [data appendData:objectData];
+            [data appendData:separatorData];
+            [data appendData:separatorData];
+        }
     }
+    
     NSData *boundaryPost = [[NSString stringWithFormat:@"--%@--", BoundaryString] dataUsingEncoding:NSUTF8StringEncoding];
     [data appendData:boundaryPost];
     [data appendData:separatorData];

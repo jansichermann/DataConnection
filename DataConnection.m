@@ -65,7 +65,7 @@ static NSString * const BoundaryString = @"Data-Boundary-aWeGhdCVFFfsdrf";
     return c;
 }
 
-+ (NSData *)postBodyWithParameters:(NSDictionary *)params {
++ (NSData *)multipartDataForParams:(NSDictionary *)params {
     NSMutableData *data = [NSMutableData data];
     NSData *boundaryPrefix = [[NSString stringWithFormat:@"--%@", BoundaryString] dataUsingEncoding:NSUTF8StringEncoding];
     NSData *separatorData = [@"\r\n" dataUsingEncoding:NSUTF8StringEncoding];
@@ -137,7 +137,39 @@ static NSString * const BoundaryString = @"Data-Boundary-aWeGhdCVFFfsdrf";
     return data;
 }
 
-+ (DataConnection *)postConnectionWithUrlString:(NSString *)urlString andData:(NSData *)data {
++ (NSData *)urlEncodedDataForParams:(NSDictionary *)params {
+    NSString *paramString = nil;
+    for (id key in params.allKeys) {
+        if (![key isKindOfClass:[NSString class]]) {
+            continue;
+        }
+        if (![[params objectForKey:key] isKindOfClass:[NSString class]]) {
+            continue;
+        }
+        
+        NSString *val = (NSString *)[params objectForKey:key];
+        
+        if (paramString == nil) {
+            paramString = key;
+        }
+        else {
+            paramString = [paramString stringByAppendingFormat:@"&%@", key];
+        }
+        paramString = [paramString stringByAppendingFormat:@"=%@", [val stringByAddingPercentEscapesUsingEncoding:NSUTF8StringEncoding]];
+    }
+    return [paramString dataUsingEncoding:NSUTF8StringEncoding];
+}
+
++ (NSData *)postBodyWithParameters:(NSDictionary *)params {
+    if ([[self mimeTypeForParams:params] isEqualToString:MimeTypeFormData]) {
+        return [self multipartDataForParams:params];
+    }
+    else {
+        return [self urlEncodedDataForParams:params];
+    }
+}
+
++ (DataConnection *)postConnectionWithUrlString:(NSString *)urlString andImageData:(NSData *)data {
     NSMutableURLRequest *urlRequest = [[NSMutableURLRequest alloc] initWithURL:[NSURL URLWithString:urlString]];
     [urlRequest setHTTPMethod:@"POST"];
     NSString *contentLength = [NSString stringWithFormat:@"%d", data.length];
@@ -147,8 +179,20 @@ static NSString * const BoundaryString = @"Data-Boundary-aWeGhdCVFFfsdrf";
     return [[self alloc] initWithRequest:urlRequest];
 }
 
++ (NSString *)mimeTypeForParams:(NSDictionary *)params {
+    for (id val in params.allValues) {
+        if (![val isKindOfClass:[NSString class]])
+            return MimeTypeFormData;
+    }
+    return MimeTypeForm;
+}
+
 + (NSString *)contentTypeForParams:(NSDictionary *)params {
     return [NSString stringWithFormat:@"%@%@", MimeTypeFormData, BoundaryString];
+}
+
++ (BOOL)requireMultipartForParameters:(NSDictionary *)parameters {
+    return NO;
 }
 
 + (DataConnection *)postConnectionWithUrlString:(NSString *)urlString andParams:(NSDictionary *)params {
@@ -158,7 +202,15 @@ static NSString * const BoundaryString = @"Data-Boundary-aWeGhdCVFFfsdrf";
     
     NSData *dataForParams = [self postBodyWithParameters:params];
     
-    [urlRequest setValue:[self contentTypeForParams:params] forHTTPHeaderField:@"Content-Type"];
+    NSString *mimeType = [self mimeTypeForParams:params];
+    if ([mimeType isEqualToString:MimeTypeFormData]) {
+        [urlRequest setValue:[mimeType stringByAppendingString:BoundaryString] forHTTPHeaderField:@"Content-Type"];
+    }
+    else {
+        [urlRequest setValue:mimeType forHTTPHeaderField:@"Content-Type"];
+    }
+    
+    
     [urlRequest setValue:[NSString stringWithFormat:@"%d", dataForParams.length] forHTTPHeaderField:@"Content-Length"];
     [urlRequest setHTTPBody:dataForParams];
     

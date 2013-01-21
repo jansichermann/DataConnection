@@ -250,15 +250,8 @@ static NSString * const BoundaryString = @"Data-Boundary-aWeGhdCVFFfsdrf";
 - (void)connectionDidFinishLoading:(NSURLConnection *)connection {
     self.didSucceed = YES;
     self.didFinish = YES;
-    if (self.dataBlock != nil) {
-        [self performSelectorInBackground:@selector(executeData) withObject:nil];
-    }
-    else if (self.parseBlock != nil) {
-        [self performSelectorInBackground:@selector(executeParse) withObject:nil];
-    }
-    else {
-        [self executeCompletion];
-    }
+    
+    [self performSelectorInBackground:@selector(executeData) withObject:nil];
 }
 
 - (void)connection:(NSURLConnection *)connection didReceiveResponse:(NSURLResponse *)response {
@@ -274,7 +267,12 @@ static NSString * const BoundaryString = @"Data-Boundary-aWeGhdCVFFfsdrf";
     if ([NSThread isMainThread]) {
         [NSException raise:@"must be non-main thread" format:@"should parse on non-main thread"];
     }
-    self.dataObject = self.dataBlock(self.connectionData);
+    if (self.dataBlock != nil) {
+        self.dataObject = self.dataBlock(self.connectionData);
+    }
+    else {
+        self.dataObject = [NSJSONSerialization JSONObjectWithData:self.connectionData options:0 error:nil];
+    }
     
     // if the parse block is set, we then execute the parse block
     if (self.parseBlock != nil) {
@@ -289,10 +287,9 @@ static NSString * const BoundaryString = @"Data-Boundary-aWeGhdCVFFfsdrf";
     if ([NSThread isMainThread]) {
         [NSException raise:@"must be non-main thread" format:@"should parse on non-main thread"];
     }
-    NSDictionary *serializedObject = [NSJSONSerialization JSONObjectWithData:self.connectionData options:0 error:nil];
-    if (serializedObject != nil) {
-        self.resultObjects = self.parseBlock(serializedObject);
-    }
+    
+    self.resultObjects = self.parseBlock(self.dataObject);
+    
     [self performSelectorOnMainThread:@selector(executeCompletion) withObject:nil waitUntilDone:NO];
 }
 

@@ -19,7 +19,7 @@
 #import <Foundation/Foundation.h>
 @class DataConnection;
 
-typedef NSArray *(^ParseBlock)(NSDictionary *d);
+typedef NSArray *(^ParseBlock)(id dataObject);
 typedef id (^DataBlock)(NSData *d);
 typedef void(^CompletionBlock)(id c);       // c is the connection, we use id for subclassing compatability
 
@@ -30,6 +30,7 @@ typedef void(^CompletionBlock)(id c);       // c is the connection, we use id fo
 
 // the dataBlock is executed, in which case dataObject gets set by
 // the dataBlock's return value.
+// if no dataBlock is set, we try to serialize the data
 @property (copy)                DataBlock       dataBlock;
 @property (atomic, readonly)    id              dataObject;
 

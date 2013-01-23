@@ -47,6 +47,10 @@ static NSString * const BoundaryString = @"Data-Boundary-aWeGhdCVFFfsdrf";
     [super start];
 }
 
++ (NSMutableURLRequest *)requestWithUrlString:(NSString *)urlString {
+    return [NSMutableURLRequest requestWithURL:[NSURL URLWithString:urlString]];
+}
+
 - (DataConnection *)initWithRequest:(NSURLRequest *)request {
     self = [super initWithRequest:request delegate:self startImmediately:NO];
     if (self) {
@@ -56,8 +60,8 @@ static NSString * const BoundaryString = @"Data-Boundary-aWeGhdCVFFfsdrf";
 }
 
 + (DataConnection *)withURLString:(NSString *)urlString {
-    NSMutableURLRequest *mr = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:urlString]];
-    mr.timeoutInterval = 10.f;
+    NSMutableURLRequest *mr = [self requestWithUrlString:urlString];
+    mr.timeoutInterval = 20.f;
     mr.HTTPShouldUsePipelining = YES;
     mr.cachePolicy = NSURLRequestReturnCacheDataElseLoad;
     DataConnection *c = [self withRequest:mr];
@@ -170,7 +174,7 @@ static NSString * const BoundaryString = @"Data-Boundary-aWeGhdCVFFfsdrf";
 }
 
 + (DataConnection *)postConnectionWithUrlString:(NSString *)urlString andImageData:(NSData *)data {
-    NSMutableURLRequest *urlRequest = [[NSMutableURLRequest alloc] initWithURL:[NSURL URLWithString:urlString]];
+    NSMutableURLRequest *urlRequest = [self requestWithUrlString:urlString];
     [urlRequest setHTTPMethod:@"POST"];
     NSString *contentLength = [NSString stringWithFormat:@"%d", data.length];
     [urlRequest setValue:MimeTypeImage forHTTPHeaderField:@"Content-Type"];
@@ -311,6 +315,10 @@ static NSString * const BoundaryString = @"Data-Boundary-aWeGhdCVFFfsdrf";
     self.resultObjects = nil;
     
     self.completionBlock = nil;
+}
+
+- (NSString *)responseString {
+    return [[NSString alloc] initWithData:self.connectionData encoding:NSUTF8StringEncoding];
 }
 
 - (void)dealloc {

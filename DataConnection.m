@@ -2,7 +2,7 @@
 //  DataConnection.m
 //
 //  Created by Jan Sichermann on 01/05/13.
-//  Copyright (c) 2013 Jan Sichermann. All rights reserved.
+//  Copyright (c) 2013 online in4mation GmbH. All rights reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -44,6 +44,7 @@ static NSString * const BoundaryString = @"Data-Boundary-aWeGhdCVFFfsdrf";
     [self scheduleInRunLoop:[NSRunLoop currentRunLoop] forMode:NSRunLoopCommonModes];
     self.didFinish = NO;
     self.didSucceed = NO;
+    self.httpResponseCode = -1;
     [super start];
 }
 
@@ -259,6 +260,8 @@ static NSString * const BoundaryString = @"Data-Boundary-aWeGhdCVFFfsdrf";
 }
 
 - (void)connection:(NSURLConnection *)connection didReceiveResponse:(NSURLResponse *)response {
+    NSHTTPURLResponse *httpResponse = (NSHTTPURLResponse*)response;
+    self.httpResponseCode = [httpResponse statusCode];
     [self.connectionData setLength:0];
 }
 

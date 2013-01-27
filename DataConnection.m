@@ -80,7 +80,8 @@ static NSString * const BoundaryString = @"Data-Boundary-aWeGhdCVFFfsdrf";
         id val = params[key];
         
         if (![val isKindOfClass:[NSString class]] &&
-            ![val conformsToProtocol:@protocol(PostableData)]) {
+            ![val conformsToProtocol:@protocol(PostableData)] &&
+            ![val isKindOfClass:[NSNumber class]]) {
             NSLog(@"value for key %@ is of an unexpected type, skipping!", key);
             continue;
         }
@@ -108,6 +109,9 @@ static NSString * const BoundaryString = @"Data-Boundary-aWeGhdCVFFfsdrf";
             contentTransferEncodingData = [@"binary" dataUsingEncoding:NSUTF8StringEncoding];
             
         }
+        else if ([val isKindOfClass:[NSNumber class]]) {
+            objectData = [[val description] dataUsingEncoding:NSUTF8StringEncoding];
+        }
         else {
             NSAssert(NO, @"This should never happen!");
         }
@@ -128,7 +132,6 @@ static NSString * const BoundaryString = @"Data-Boundary-aWeGhdCVFFfsdrf";
             [data appendData:separatorData];
             [data appendData:separatorData];
             [data appendData:objectData];
-            [data appendData:separatorData];
             [data appendData:separatorData];
         }
     }
@@ -181,7 +184,9 @@ static NSString * const BoundaryString = @"Data-Boundary-aWeGhdCVFFfsdrf";
     [urlRequest setValue:MimeTypeImage forHTTPHeaderField:@"Content-Type"];
     [urlRequest setValue:contentLength forHTTPHeaderField:@"Content-Length"];
     [urlRequest setHTTPBody:data];
-    return [[self alloc] initWithRequest:urlRequest];
+    DataConnection *c = [[self alloc] initWithRequest:urlRequest];
+    c.urlString = urlString;
+    return c;
 }
 
 + (NSString *)mimeTypeForParams:(NSDictionary *)params {
@@ -198,6 +203,22 @@ static NSString * const BoundaryString = @"Data-Boundary-aWeGhdCVFFfsdrf";
 
 + (BOOL)requireMultipartForParameters:(NSDictionary *)parameters {
     return NO;
+}
+
++ (DataConnection *)postMultipartConnectionWithUrlString:(NSString *)urlString andParams:(NSDictionary *)params {
+    NSMutableURLRequest *urlRequest = [[NSMutableURLRequest alloc] initWithURL:[NSURL URLWithString:urlString]];
+    [urlRequest setHTTPMethod:@"POST"];
+    NSData *dataForParams = [self multipartDataForParams:params];
+    
+    NSString *mimeType = MimeTypeFormData;
+    [urlRequest setValue:[mimeType stringByAppendingString:BoundaryString] forHTTPHeaderField:@"Content-Type"];
+    
+    [urlRequest setValue:[NSString stringWithFormat:@"%d", dataForParams.length] forHTTPHeaderField:@"Content-Length"];
+    [urlRequest setHTTPBody:dataForParams];
+    
+    DataConnection *c = [[self alloc] initWithRequest:urlRequest];
+    c.urlString = urlString;
+    return c;
 }
 
 + (DataConnection *)postConnectionWithUrlString:(NSString *)urlString andParams:(NSDictionary *)params {
@@ -219,7 +240,9 @@ static NSString * const BoundaryString = @"Data-Boundary-aWeGhdCVFFfsdrf";
     [urlRequest setValue:[NSString stringWithFormat:@"%d", dataForParams.length] forHTTPHeaderField:@"Content-Length"];
     [urlRequest setHTTPBody:dataForParams];
     
-    return [[self alloc] initWithRequest:urlRequest];
+    DataConnection *c = [[self alloc] initWithRequest:urlRequest];
+    c.urlString = urlString;
+    return c;
 }
 
 + (DataConnection *)withRequest:(NSURLRequest *)request {

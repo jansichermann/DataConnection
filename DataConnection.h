@@ -50,9 +50,10 @@ typedef void(^CompletionBlock)(id c);       // c is the connection, we use id fo
 + (NSMutableURLRequest *)requestWithUrlString:(NSString *)urlString;
 
 + (id)withURLString:(NSString *)urlString;
-+ (DataConnection *)postConnectionWithUrlString:(NSString *)urlString andImageData:(NSData *)data;
-+ (DataConnection *)postConnectionWithUrlString:(NSString *)urlString andParams:(NSDictionary *)params;
-
++ (id)postConnectionWithUrlString:(NSString *)urlString andImageData:(NSData *)data;
++ (id)postConnectionWithUrlString:(NSString *)urlString andParams:(NSDictionary *)params;
++ (id)postMultipartConnectionWithUrlString:(NSString *)urlString andParams:(NSDictionary *)params;
+    
 - (void)cancelAndClear;
 
 - (NSString *)responseString;

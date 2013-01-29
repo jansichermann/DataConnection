@@ -48,8 +48,8 @@ typedef void(^CompletionBlock)(id c);       // c is the connection, we use id fo
 @property (nonatomic)           int             httpResponseCode;
 
 + (NSMutableURLRequest *)requestWithUrlString:(NSString *)urlString;
-
 + (id)withURLString:(NSString *)urlString;
++ (id)postConnectionWithUrlString:(NSString *)urlString andData:(NSData *)data andMimeType:(NSString *)mimeType;
 + (id)postConnectionWithUrlString:(NSString *)urlString andImageData:(NSData *)data;
 + (id)postConnectionWithUrlString:(NSString *)urlString andParams:(NSDictionary *)params;
 + (id)postMultipartConnectionWithUrlString:(NSString *)urlString andParams:(NSDictionary *)params;

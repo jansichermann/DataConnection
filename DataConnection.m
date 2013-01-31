@@ -2,7 +2,7 @@
 //  DataConnection.m
 //
 //  Created by Jan Sichermann on 01/05/13.
-//  Copyright (c) 2013 online in4mation GmbH. All rights reserved.
+//  Copyright (c) 2013 Jan Sichermann. All rights reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -218,7 +218,7 @@ static NSString * const BoundaryString = @"Data-Boundary-aWeGhdCVFFfsdrf";
 }
 
 + (DataConnection *)postMultipartConnectionWithUrlString:(NSString *)urlString andParams:(NSDictionary *)params {
-    NSMutableURLRequest *urlRequest = [[NSMutableURLRequest alloc] initWithURL:[NSURL URLWithString:urlString]];
+    NSMutableURLRequest *urlRequest = [self requestWithUrlString:urlString];
     [urlRequest setHTTPMethod:@"POST"];
     NSData *dataForParams = [self multipartDataForParams:params];
     
@@ -235,7 +235,7 @@ static NSString * const BoundaryString = @"Data-Boundary-aWeGhdCVFFfsdrf";
 
 + (DataConnection *)postConnectionWithUrlString:(NSString *)urlString andParams:(NSDictionary *)params {
     
-    NSMutableURLRequest *urlRequest = [[NSMutableURLRequest alloc] initWithURL:[NSURL URLWithString:urlString]];
+    NSMutableURLRequest *urlRequest = [self requestWithUrlString:urlString];
     [urlRequest setHTTPMethod:@"POST"];
     
     NSData *dataForParams = [self postBodyWithParameters:params];
@@ -342,10 +342,15 @@ static NSString * const BoundaryString = @"Data-Boundary-aWeGhdCVFFfsdrf";
     if (self.completionBlock != nil) {
         self.completionBlock(self);
     }
+    [self cleanup];
 }
 
 - (void)cancelAndClear {
     [self cancel];
+    [self cleanup];
+}
+
+- (void)cleanup {
     self.dataBlock = nil;
     self.dataObject = nil;
     

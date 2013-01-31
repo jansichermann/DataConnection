@@ -2,7 +2,7 @@
 //  DataConnection.h
 //
 //  Created by Jan Sichermann on 01/05/13.
-//  Copyright (c) 2013 online in4mation GmbH. All rights reserved.
+//  Copyright (c) 2013 Jan Sichermann. All rights reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -57,6 +57,8 @@ typedef void(^CompletionBlock)(id c);       // c is the connection, we use id fo
 - (void)cancelAndClear;
 
 - (NSString *)responseString;
+
+- (void)cleanup;
 @end
 
 

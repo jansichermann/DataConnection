@@ -17,6 +17,7 @@
 // limitations under the License.
 
 #import "DataConnection.h"
+#import "DataConnectionMacros.h"
 
 static NSString * const MimeTypeImage = @"image/jpeg";
 static NSString * const MimeTypeJson = @"application/json";
@@ -262,22 +263,22 @@ static NSString * const BoundaryString = @"Data-Boundary-aWeGhdCVFFfsdrf";
 }
 
 - (id)init {
-    [NSException raise:@"non-designated initializer" format:@"use initWithRequest:"];
+    NON_DESIGNATED_INITIALIZER
     return nil;
 }
 
 - (id)initWithRequest:(NSURLRequest *)request delegate:(id)delegate {
-    [NSException raise:@"non-designated initializer" format:@"use initWithRequest:"];
+    NON_DESIGNATED_INITIALIZER
     return nil;
 }
 
 + (NSURLConnection *)connectionWithRequest:(NSURLRequest *)request delegate:(id)delegate {
-    [NSException raise:@"non-designated initializer" format:@"use initWithRequest:"];
+    NON_DESIGNATED_INITIALIZER
     return nil;
 }
 
 - (id)initWithRequest:(NSURLRequest *)request delegate:(id)delegate startImmediately:(BOOL)startImmediately {
-    [NSException raise:@"non-designated initializer" format:@"use initWithRequest:"];
+    NON_DESIGNATED_INITIALIZER
     return nil;
 }
 

@@ -214,10 +214,6 @@ static NSString * const BoundaryString = @"Data-Boundary-aWeGhdCVFFfsdrf";
     return [NSString stringWithFormat:@"%@%@", MimeTypeFormData, BoundaryString];
 }
 
-+ (BOOL)requireMultipartForParameters:(NSDictionary *)parameters {
-    return NO;
-}
-
 + (DataConnection *)postMultipartConnectionWithUrlString:(NSString *)urlString andParams:(NSDictionary *)params {
     NSMutableURLRequest *urlRequest = [self requestWithUrlString:urlString];
     [urlRequest setHTTPMethod:@"POST"];
@@ -363,6 +359,10 @@ static NSString * const BoundaryString = @"Data-Boundary-aWeGhdCVFFfsdrf";
 
 - (NSString *)responseString {
     return [[NSString alloc] initWithData:self.connectionData encoding:NSUTF8StringEncoding];
+}
+
+- (BOOL)isPostConnection {
+    return [self.currentRequest.HTTPMethod isEqualToString:@"POST"];
 }
 
 - (void)dealloc {

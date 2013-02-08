@@ -58,6 +58,8 @@ typedef void(^CompletionBlock)(id c);       // c is the connection, we use id fo
 
 - (NSString *)responseString;
 
+- (BOOL)isPostConnection;
+
 - (void)cleanup;
 @end
 

@@ -89,6 +89,7 @@ static NSString * const BoundaryString = @"Data-Boundary-aWeGhdCVFFfsdrf";
         
         NSData *contentDispoData = nil;
         NSData *contentTypeData = nil;
+        NSData *contentLengthData = nil;
         NSData *contentTransferEncodingData = nil;
         NSData *objectData = nil;
         
@@ -97,17 +98,18 @@ static NSString * const BoundaryString = @"Data-Boundary-aWeGhdCVFFfsdrf";
         if ([val isKindOfClass:[NSString class]]) {
             objectData = [val dataUsingEncoding:NSUTF8StringEncoding];
         }
-        else if ([val conformsToProtocol:@protocol(PostableData)] &&
-                 ([val isKindOfClass:[NSData class]] || [[val class] isSubclassOfClass:[NSData class]])
-                 ) {
+        else if ([val conformsToProtocol:@protocol(PostableData)]) {
             
-            NSData<PostableData> *postableData = val;
+            id<PostableData> postableData = val;
             
-            objectData = postableData;
+            objectData = postableData.data;
+
+            if (objectData == nil) continue;
             
-            contentDispoString = [contentDispoString stringByAppendingFormat:@"; filename=%@", postableData.fileName]; // some filename
-            contentTypeData = [postableData.mimeType dataUsingEncoding:NSUTF8StringEncoding];
-            contentTransferEncodingData = [@"binary" dataUsingEncoding:NSUTF8StringEncoding];
+            contentDispoString = [contentDispoString stringByAppendingFormat:@"; filename=\"%@\"", postableData.fileName]; // some filename
+            contentLengthData = [[NSString stringWithFormat:@"Content-Length: %d", objectData.length] dataUsingEncoding:NSUTF8StringEncoding];
+            contentTypeData = [[NSString stringWithFormat:@"Content-Type: %@",postableData.mimeType] dataUsingEncoding:NSUTF8StringEncoding];
+            contentTransferEncodingData = [@"Content-Transfer-Encoding: binary" dataUsingEncoding:NSUTF8StringEncoding];
             
         }
         else if ([val isKindOfClass:[NSNumber class]]) {
@@ -124,13 +126,20 @@ static NSString * const BoundaryString = @"Data-Boundary-aWeGhdCVFFfsdrf";
             [data appendData:boundaryPrefix];
             [data appendData:separatorData];
             [data appendData:contentDispoData];
+            [data appendData:separatorData];
+            
             if (contentTypeData) {
                 [data appendData:contentTypeData];
+                [data appendData:separatorData];
+            }
+            if (contentLengthData) {
+                [data appendData:contentLengthData];
+                [data appendData:separatorData];
             }
             if (contentTransferEncodingData) {
                 [data appendData:contentTransferEncodingData];
+                [data appendData:separatorData];
             }
-            [data appendData:separatorData];
             [data appendData:separatorData];
             [data appendData:objectData];
             [data appendData:separatorData];

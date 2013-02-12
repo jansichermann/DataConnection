@@ -67,4 +67,5 @@ typedef void(^CompletionBlock)(id c);       // c is the connection, we use id fo
 @protocol PostableData <NSObject>
 - (NSString *)mimeType;
 - (NSString *)fileName;
+- (NSData *)data;
 @end

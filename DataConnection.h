@@ -17,11 +17,19 @@
 // limitations under the License.
 
 #import <Foundation/Foundation.h>
+
+
+
 @class DataConnection;
+
+
 
 typedef NSArray *(^ParseBlock)(id dataObject);
 typedef id (^DataBlock)(NSData *d);
 typedef void(^CompletionBlock)(id c);       // c is the connection, we use id for subclassing compatability
+typedef void(^ProgressBlock)(float progress);
+
+
 
 @interface DataConnection : NSURLConnection <NSURLConnectionDataDelegate, NSURLConnectionDelegate>
 
@@ -41,11 +49,16 @@ typedef void(^CompletionBlock)(id c);       // c is the connection, we use id fo
 // the completion block is executed at the very end
 @property (copy)                CompletionBlock completionBlock;
 
+// the progress block is called for every progress invocation
+@property (copy)                ProgressBlock   progressBlock;
+
 
 // status
 @property (readonly)            BOOL            didSucceed;
 @property (readonly)            BOOL            didFinish;
-@property (nonatomic)           int             httpResponseCode;
+@property (readonly)            int             httpResponseCode;
+@property (readonly)            NSError         *error;
+@property (readonly)            BOOL            inProgress;
 
 + (NSMutableURLRequest *)requestWithUrlString:(NSString *)urlString;
 + (id)withURLString:(NSString *)urlString;
@@ -61,6 +74,8 @@ typedef void(^CompletionBlock)(id c);       // c is the connection, we use id fo
 - (BOOL)isPostConnection;
 
 - (void)cleanup;
+
++ (NSString *)urlEncodedString:(NSString *)string;
 @end
 
 
@@ -68,4 +83,5 @@ typedef void(^CompletionBlock)(id c);       // c is the connection, we use id fo
 - (NSString *)mimeType;
 - (NSString *)fileName;
 - (NSData *)data;
+
 @end

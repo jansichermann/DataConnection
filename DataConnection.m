@@ -19,6 +19,8 @@
 #import "DataConnection.h"
 #import "DataConnectionMacros.h"
 
+
+
 static NSString * const MimeTypeImage = @"image/jpeg";
 static NSString * const MimeTypeJson = @"application/json";
 static NSString * const MimeTypeForm = @"application/x-www-form-urlencoded";
@@ -26,7 +28,9 @@ static NSString * const MimeTypeFormData = @"multipart/form-data; boundary=";
 static NSString * const BoundaryString = @"Data-Boundary-aWeGhdCVFFfsdrf";
 
 
+
 @interface DataConnection ()
+
 @property (atomic, readwrite)       BOOL            unauthorized;
 @property (nonatomic, readwrite)    NSString        *urlString;
 @property (nonatomic, readwrite)    NSMutableData   *connectionData;
@@ -35,7 +39,12 @@ static NSString * const BoundaryString = @"Data-Boundary-aWeGhdCVFFfsdrf";
 
 @property (readwrite)               BOOL            didSucceed;
 @property (readwrite)               BOOL            didFinish;
+@property (readwrite)               int             httpResponseCode;
+@property (readwrite)               NSError         *error;
+@property (readwrite)               BOOL            inProgress;
+
 @end
+
 
 
 @implementation DataConnection
@@ -46,6 +55,7 @@ static NSString * const BoundaryString = @"Data-Boundary-aWeGhdCVFFfsdrf";
     self.didFinish = NO;
     self.didSucceed = NO;
     self.httpResponseCode = -1;
+    self.inProgress = YES;
     [super start];
 }
 
@@ -71,85 +81,106 @@ static NSString * const BoundaryString = @"Data-Boundary-aWeGhdCVFFfsdrf";
     return c;
 }
 
+
++ (void)addObjectData:(NSData *)objectData
+               toData:(NSMutableData *)data
+  withContentTypeData:(NSData *)contentTypeData
+  andContentDispoData:(NSData *)contentDispoData {
+  
+    if (objectData) {
+        [data appendData:[self boundaryPrefix]];
+        [data appendData:[self separatorData]];
+        [data appendData:contentDispoData];
+        [data appendData:[self separatorData]];
+        
+        if (contentTypeData) {
+            [data appendData:contentTypeData];
+            [data appendData:[self separatorData]];
+            
+            NSData *contentLengthData = [[NSString stringWithFormat:@"Content-Length: %d", objectData.length] dataUsingEncoding:NSUTF8StringEncoding];
+            [data appendData:contentLengthData];
+            [data appendData:[self separatorData]];
+            
+            NSData *contentTransferEncodingData = [@"Content-Transfer-Encoding: binary" dataUsingEncoding:NSUTF8StringEncoding];
+            [data appendData:contentTransferEncodingData];
+            [data appendData:[self separatorData]];
+        }
+        
+        [data appendData:[self separatorData]];
+        [data appendData:objectData];
+        [data appendData:[self separatorData]];
+    }
+}
+
++ (void)addKey:(NSString *)key andVal:(id)val toData:(NSMutableData *)data {
+    if (![key isKindOfClass:[NSString class]]) return;
+    
+    if (![val isKindOfClass:[NSString class]] &&
+        ![val conformsToProtocol:@protocol(PostableData)] &&
+        ![val isKindOfClass:[NSNumber class]]) {
+        NSLog(@"value for key %@ is of an unexpected type, skipping!", key);
+        return;
+    }
+    
+    NSData *contentDispoData = nil;
+    NSData *contentTypeData = nil;
+    NSData *objectData = nil;
+    
+    NSString *contentDispoString = [NSString stringWithFormat:@"Content-Disposition: form-data; name=\"%@\"", key];
+    
+    if ([val isKindOfClass:[NSString class]]) {
+        objectData = [val dataUsingEncoding:NSUTF8StringEncoding];
+    }
+    else if ([val conformsToProtocol:@protocol(PostableData)]) {
+        
+        id<PostableData> postableData = val;
+        
+        objectData = postableData.data;
+        
+        if (objectData == nil) return;
+        
+        contentDispoString = [contentDispoString stringByAppendingFormat:@"; filename=\"%@\"", postableData.fileName]; // some filename
+        contentTypeData = [[NSString stringWithFormat:@"Content-Type: %@",postableData.mimeType] dataUsingEncoding:NSUTF8StringEncoding];
+    }
+    else if ([val isKindOfClass:[NSNumber class]]) {
+        objectData = [[val description] dataUsingEncoding:NSUTF8StringEncoding];
+    }
+    else {
+        NSAssert(NO, @"This should never happen!");
+    }
+    
+    contentDispoData = [contentDispoString dataUsingEncoding:NSUTF8StringEncoding];
+    
+    [self addObjectData:objectData toData:data withContentTypeData:contentTypeData andContentDispoData:contentDispoData];
+}
+
++ (NSData *)boundaryPrefix {
+    return [[NSString stringWithFormat:@"--%@", BoundaryString] dataUsingEncoding:NSUTF8StringEncoding];
+}
+
++ (NSData *)separatorData {
+    return [@"\r\n" dataUsingEncoding:NSUTF8StringEncoding];
+}
+
 + (NSData *)multipartDataForParams:(NSDictionary *)params {
     NSMutableData *data = [NSMutableData data];
-    NSData *boundaryPrefix = [[NSString stringWithFormat:@"--%@", BoundaryString] dataUsingEncoding:NSUTF8StringEncoding];
-    NSData *separatorData = [@"\r\n" dataUsingEncoding:NSUTF8StringEncoding];
     
     for (NSString *key in params.allKeys) {
-        if (![key isKindOfClass:[NSString class]]) continue;
-        id val = params[key];
-        
-        if (![val isKindOfClass:[NSString class]] &&
-            ![val conformsToProtocol:@protocol(PostableData)] &&
-            ![val isKindOfClass:[NSNumber class]]) {
-            NSLog(@"value for key %@ is of an unexpected type, skipping!", key);
-            continue;
-        }
-        
-        NSData *contentDispoData = nil;
-        NSData *contentTypeData = nil;
-        NSData *contentLengthData = nil;
-        NSData *contentTransferEncodingData = nil;
-        NSData *objectData = nil;
-        
-        NSString *contentDispoString = [NSString stringWithFormat:@"Content-Disposition: form-data; name=\"%@\"", key];
-        
-        if ([val isKindOfClass:[NSString class]]) {
-            objectData = [val dataUsingEncoding:NSUTF8StringEncoding];
-        }
-        else if ([val conformsToProtocol:@protocol(PostableData)]) {
-            
-            id<PostableData> postableData = val;
-            
-            objectData = postableData.data;
-
-            if (objectData == nil) continue;
-            
-            contentDispoString = [contentDispoString stringByAppendingFormat:@"; filename=\"%@\"", postableData.fileName]; // some filename
-            contentLengthData = [[NSString stringWithFormat:@"Content-Length: %d", objectData.length] dataUsingEncoding:NSUTF8StringEncoding];
-            contentTypeData = [[NSString stringWithFormat:@"Content-Type: %@",postableData.mimeType] dataUsingEncoding:NSUTF8StringEncoding];
-            contentTransferEncodingData = [@"Content-Transfer-Encoding: binary" dataUsingEncoding:NSUTF8StringEncoding];
-            
-        }
-        else if ([val isKindOfClass:[NSNumber class]]) {
-            objectData = [[val description] dataUsingEncoding:NSUTF8StringEncoding];
+        // deal with single objects, or lists if appropriate
+        if ([params[key] isKindOfClass:[NSArray class]]) {
+            for (id val in params[key]) {
+                [self addKey:key andVal:val toData:data];
+            }
         }
         else {
-            NSAssert(NO, @"This should never happen!");
-        }
-        
-        contentDispoData = [contentDispoString dataUsingEncoding:NSUTF8StringEncoding];
-        
-        // last sanity check
-        if (objectData != nil) {
-            [data appendData:boundaryPrefix];
-            [data appendData:separatorData];
-            [data appendData:contentDispoData];
-            [data appendData:separatorData];
-            
-            if (contentTypeData) {
-                [data appendData:contentTypeData];
-                [data appendData:separatorData];
-            }
-            if (contentLengthData) {
-                [data appendData:contentLengthData];
-                [data appendData:separatorData];
-            }
-            if (contentTransferEncodingData) {
-                [data appendData:contentTransferEncodingData];
-                [data appendData:separatorData];
-            }
-            [data appendData:separatorData];
-            [data appendData:objectData];
-            [data appendData:separatorData];
+            [self addKey:key andVal:params[key] toData:data];
         }
     }
     
     NSData *boundaryPost = [[NSString stringWithFormat:@"--%@--", BoundaryString] dataUsingEncoding:NSUTF8StringEncoding];
     [data appendData:boundaryPost];
-    [data appendData:separatorData];
-    [data appendData:separatorData];
+    [data appendData:[self separatorData]];
+    [data appendData:[self separatorData]];
     [data appendData:boundaryPost];
     
     return data;
@@ -173,7 +204,7 @@ static NSString * const BoundaryString = @"Data-Boundary-aWeGhdCVFFfsdrf";
         else {
             paramString = [paramString stringByAppendingFormat:@"&%@", key];
         }
-        paramString = [paramString stringByAppendingFormat:@"=%@", [val stringByAddingPercentEscapesUsingEncoding:NSUTF8StringEncoding]];
+        paramString = [paramString stringByAppendingFormat:@"=%@", [self urlEncodedString:val]];
     }
     return [paramString dataUsingEncoding:NSUTF8StringEncoding];
 }
@@ -288,16 +319,25 @@ static NSString * const BoundaryString = @"Data-Boundary-aWeGhdCVFFfsdrf";
 }
 
 - (void)connection:(NSURLConnection *)connection didFailWithError:(NSError *)error {
+    self.inProgress = NO;
+    self.error = error;
     self.didSucceed = NO;
     self.didFinish = YES;
     [self executeCompletion];
 }
 
 - (void)connectionDidFinishLoading:(NSURLConnection *)connection {
+    self.inProgress = NO;
     self.didSucceed = YES;
     self.didFinish = YES;
     
     [self performSelectorInBackground:@selector(executeData) withObject:nil];
+}
+
+- (void)connection:(NSURLConnection *)connection didSendBodyData:(NSInteger)bytesWritten totalBytesWritten:(NSInteger)totalBytesWritten totalBytesExpectedToWrite:(NSInteger)totalBytesExpectedToWrite {
+    if (self.progressBlock) {
+        self.progressBlock(totalBytesWritten / (float)totalBytesExpectedToWrite);
+    }
 }
 
 - (void)connection:(NSURLConnection *)connection didReceiveResponse:(NSURLResponse *)response {
@@ -311,11 +351,31 @@ static NSString * const BoundaryString = @"Data-Boundary-aWeGhdCVFFfsdrf";
     
 }
 
++ (NSString *)urlEncodedString:(NSString *)string {
+    NSMutableString *urlEncodedString = [NSMutableString string];
+    const unsigned char *source = (const unsigned char *)[string UTF8String];
+    int sourceLen = strlen((const char *)source);
+    for (int i = 0; i < sourceLen; ++i) {
+        const unsigned char thisChar = source[i];
+        if (thisChar == ' '){
+            [urlEncodedString appendString:@"+"];
+        } else if (thisChar == '.' || thisChar == '-' || thisChar == '_' || thisChar == '~' ||
+                   (thisChar >= 'a' && thisChar <= 'z') ||
+                   (thisChar >= 'A' && thisChar <= 'Z') ||
+                   (thisChar >= '0' && thisChar <= '9')) {
+            [urlEncodedString appendFormat:@"%c", thisChar];
+        } else {
+            [urlEncodedString appendFormat:@"%%%02X", thisChar];
+        }
+    }
+    return urlEncodedString;
+}
+
 - (void)executeData {
     if ([NSThread isMainThread]) {
         [NSException raise:@"must be non-main thread" format:@"should parse on non-main thread"];
     }
-    if (self.dataBlock != nil) {
+    if (self.dataBlock) {
         self.dataObject = self.dataBlock(self.connectionData);
     }
     else {
@@ -323,7 +383,7 @@ static NSString * const BoundaryString = @"Data-Boundary-aWeGhdCVFFfsdrf";
     }
     
     // if the parse block is set, we then execute the parse block
-    if (self.parseBlock != nil) {
+    if (self.parseBlock) {
         [self executeParse];
     }
     else {
@@ -345,7 +405,7 @@ static NSString * const BoundaryString = @"Data-Boundary-aWeGhdCVFFfsdrf";
     if (![NSThread isMainThread]) {
         [NSException raise:@"must be main thread" format:@"completion block must be performed on main thread"];
     }
-    if (self.completionBlock != nil) {
+    if (self.completionBlock) {
         self.completionBlock(self);
     }
     [self cleanup];
@@ -354,6 +414,12 @@ static NSString * const BoundaryString = @"Data-Boundary-aWeGhdCVFFfsdrf";
 - (void)cancelAndClear {
     [self cancel];
     [self cleanup];
+}
+
+- (void)cancel {
+    self.inProgress = NO;
+    self.didSucceed = NO;
+    self.didFinish = NO;
 }
 
 - (void)cleanup {
@@ -372,9 +438,5 @@ static NSString * const BoundaryString = @"Data-Boundary-aWeGhdCVFFfsdrf";
 
 - (BOOL)isPostConnection {
     return [self.currentRequest.HTTPMethod isEqualToString:@"POST"];
-}
-
-- (void)dealloc {
-    NSLog(@"deallocing dataConnection");
 }
 @end

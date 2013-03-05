@@ -28,7 +28,6 @@ extern NSString * const MimeTypeImage;
 extern NSString * const MimeTypeJson;
 extern NSString * const MimeTypeForm;
 extern NSString * const MimeTypeFormData;
-extern NSString * const BoundaryString;
 
 
 

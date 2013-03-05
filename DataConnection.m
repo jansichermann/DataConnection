@@ -25,7 +25,7 @@ NSString * const MimeTypeImage = @"image/jpeg";
 NSString * const MimeTypeJson = @"application/json";
 NSString * const MimeTypeForm = @"application/x-www-form-urlencoded";
 NSString * const MimeTypeFormData = @"multipart/form-data; boundary=";
-NSString * const BoundaryString = @"Data-Boundary-aWeGhdCVFFfsdrf";
+static NSString * const BoundaryString = @"Data-Boundary-aWeGhdCVFFfsdrf";
 
 
 

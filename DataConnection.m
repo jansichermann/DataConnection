@@ -230,18 +230,6 @@ static NSString * const BoundaryString = @"Data-Boundary-aWeGhdCVFFfsdrf";
     return c;
 }
 
-+ (DataConnection *)postConnectionWithUrlString:(NSString *)urlString andImageData:(NSData *)data {
-    NSMutableURLRequest *urlRequest = [self requestWithUrlString:urlString];
-    [urlRequest setHTTPMethod:@"POST"];
-    NSString *contentLength = [NSString stringWithFormat:@"%d", data.length];
-    [urlRequest setValue:MimeTypeImage forHTTPHeaderField:@"Content-Type"];
-    [urlRequest setValue:contentLength forHTTPHeaderField:@"Content-Length"];
-    [urlRequest setHTTPBody:data];
-    DataConnection *c = [[self alloc] initWithRequest:urlRequest];
-    c.urlString = urlString;
-    return c;
-}
-
 + (NSString *)mimeTypeForParams:(NSDictionary *)params {
     for (id val in params.allValues) {
         if (![val isKindOfClass:[NSString class]])

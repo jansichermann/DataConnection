@@ -96,11 +96,26 @@ typedef void(^ProgressBlock)(float progress);
 @property (readonly)            NSError         *error;
 @property (readonly)            BOOL            inProgress;
 
+/**-----
+ @name Initializers
+ *------
+ */
 + (NSMutableURLRequest *)requestWithUrlString:(NSString *)urlString;
 + (id)withURLString:(NSString *)urlString;
 + (id)postConnectionWithUrlString:(NSString *)urlString andData:(NSData *)data andMimeType:(NSString *)mimeType;
-+ (id)postConnectionWithUrlString:(NSString *)urlString andImageData:(NSData *)data;
+
+/**
+ A POST request initializer. Depending on the params being passed in, this becomes either an x-www-form-urlencoded or a multipart/form-data form.
+ @param params An NSDictionary with NSString keys mapping to either an NSString, an NSNumber or an object conforming to PostableData.
+ @param urlString The Url String to which to post.
+ */
 + (id)postConnectionWithUrlString:(NSString *)urlString andParams:(NSDictionary *)params;
+
+/**
+ A POST request initializer. This will, regardless of the types of object in params, create a multipart/form-data request.
+ @param params An NSDictionary with NSString keys mapping to either an NSString, an NSNumber or an object conforming to PostableData.
+ @param urlString The Url String to which to post.
+ */
 + (id)postMultipartConnectionWithUrlString:(NSString *)urlString andParams:(NSDictionary *)params;
     
 - (void)cancelAndClear;
@@ -116,11 +131,25 @@ typedef void(^ProgressBlock)(float progress);
 @end
 
 
-
+/**
+ An Object only has to conform to PostableData if it is passed into DataConnection
+ as part of an NSDictionary.
+ */
 @protocol PostableData <NSObject>
 
+/**
+ A Mime Type describing the data
+ */
 - (NSString *)mimeType;
+
+/**
+ A file name
+ */
 - (NSString *)fileName;
+
+/**
+ The Actual Data to be posted
+ */
 - (NSData *)data;
 
 @end

@@ -24,6 +24,14 @@
 
 
 
+extern NSString * const MimeTypeImage;
+extern NSString * const MimeTypeJson;
+extern NSString * const MimeTypeForm;
+extern NSString * const MimeTypeFormData;
+extern NSString * const BoundaryString;
+
+
+
 typedef NSArray *(^ParseBlock)(id dataObject);
 typedef id (^DataBlock)(NSData *d);
 typedef void(^CompletionBlock)(id c);       // c is the connection, we use id for subclassing compatability

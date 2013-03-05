@@ -21,11 +21,11 @@
 
 
 
-static NSString * const MimeTypeImage = @"image/jpeg";
-static NSString * const MimeTypeJson = @"application/json";
-static NSString * const MimeTypeForm = @"application/x-www-form-urlencoded";
-static NSString * const MimeTypeFormData = @"multipart/form-data; boundary=";
-static NSString * const BoundaryString = @"Data-Boundary-aWeGhdCVFFfsdrf";
+NSString * const MimeTypeImage = @"image/jpeg";
+NSString * const MimeTypeJson = @"application/json";
+NSString * const MimeTypeForm = @"application/x-www-form-urlencoded";
+NSString * const MimeTypeFormData = @"multipart/form-data; boundary=";
+NSString * const BoundaryString = @"Data-Boundary-aWeGhdCVFFfsdrf";
 
 
 
@@ -330,8 +330,9 @@ static NSString * const BoundaryString = @"Data-Boundary-aWeGhdCVFFfsdrf";
     self.inProgress = NO;
     self.didSucceed = YES;
     self.didFinish = YES;
-    
-    [self performSelectorInBackground:@selector(executeData) withObject:nil];
+    dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_BACKGROUND, 0), ^{
+        [self executeData];
+    });
 }
 
 - (void)connection:(NSURLConnection *)connection didSendBodyData:(NSInteger)bytesWritten totalBytesWritten:(NSInteger)totalBytesWritten totalBytesExpectedToWrite:(NSInteger)totalBytesExpectedToWrite {
@@ -358,7 +359,7 @@ static NSString * const BoundaryString = @"Data-Boundary-aWeGhdCVFFfsdrf";
     for (int i = 0; i < sourceLen; ++i) {
         const unsigned char thisChar = source[i];
         if (thisChar == ' '){
-            [urlEncodedString appendString:@"+"];
+            [urlEncodedString appendString:@"\%20"];
         } else if (thisChar == '.' || thisChar == '-' || thisChar == '_' || thisChar == '~' ||
                    (thisChar >= 'a' && thisChar <= 'z') ||
                    (thisChar >= 'A' && thisChar <= 'Z') ||
@@ -387,7 +388,9 @@ static NSString * const BoundaryString = @"Data-Boundary-aWeGhdCVFFfsdrf";
         [self executeParse];
     }
     else {
-        [self performSelectorOnMainThread:@selector(executeCompletion) withObject:nil waitUntilDone:NO];
+        dispatch_async(dispatch_get_main_queue(), ^{
+            [self executeCompletion];
+        });
     }
 }
 
@@ -398,7 +401,9 @@ static NSString * const BoundaryString = @"Data-Boundary-aWeGhdCVFFfsdrf";
     
     self.resultObjects = self.parseBlock(self.dataObject);
     
-    [self performSelectorOnMainThread:@selector(executeCompletion) withObject:nil waitUntilDone:NO];
+    dispatch_async(dispatch_get_main_queue(), ^{
+        [self executeCompletion];
+    });
 }
 
 - (void)executeCompletion {

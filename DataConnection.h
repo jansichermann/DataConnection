@@ -33,7 +33,7 @@ extern NSString * const MimeTypeFormData;
 
 typedef NSArray *(^ParseBlock)(id dataObject);
 typedef id (^DataBlock)(NSData *d);
-typedef void(^CompletionBlock)(id c);       // c is the connection, we use id for subclassing compatability
+typedef void(^CompletionBlock)(id c);
 typedef void(^ProgressBlock)(float progress);
 
 
@@ -43,20 +43,49 @@ typedef void(^ProgressBlock)(float progress);
 @property (nonatomic, readonly) NSMutableData   *connectionData;
 @property (nonatomic, readonly) NSString        *urlString;
 
-// the dataBlock is executed, in which case dataObject gets set by
-// the dataBlock's return value.
-// if no dataBlock is set, we try to serialize the data
+/**-----
+ * @name Data Block
+ *------
+ */
+
+/**
+ the dataBlock is executed, in which case dataObject gets set by
+ the dataBlock's return value.
+ if no dataBlock is set, we try to serialize the data as json
+ */
 @property (copy)                DataBlock       dataBlock;
 @property (atomic, readonly)    id              dataObject;
 
-// parse block is executed in which case resultObjects gets set by the parseBlock's returnValue
+/**-----
+ * @name Parse Block
+ *------
+ */
+
+/**
+ parse block is executed in which case resultObjects gets set by the parseBlock's return value
+ */
 @property (copy)                ParseBlock      parseBlock;
 @property (atomic, readonly)    NSArray         *resultObjects;
 
-// the completion block is executed at the very end
+/**-----
+ * @name Completion Block
+ *------
+ */
+
+/**
+ the completion block is executed at the very end on the main thread
+ @param The block is passed a connection. For subclassing compatability it is defined as an id.
+ */
 @property (copy)                CompletionBlock completionBlock;
 
-// the progress block is called for every progress invocation
+
+/**-----
+ * @name Progress Block
+ */
+
+/**
+ the progress block is called for every progress invocation on uploading data
+ */
 @property (copy)                ProgressBlock   progressBlock;
 
 
@@ -83,10 +112,13 @@ typedef void(^ProgressBlock)(float progress);
 - (void)cleanup;
 
 + (NSString *)urlEncodedString:(NSString *)string;
+
 @end
 
 
+
 @protocol PostableData <NSObject>
+
 - (NSString *)mimeType;
 - (NSString *)fileName;
 - (NSData *)data;

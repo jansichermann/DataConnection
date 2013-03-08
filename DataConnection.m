@@ -344,26 +344,29 @@ static NSString * const BoundaryString = @"Data-Boundary-aWeGhdCVFFfsdrf";
     NSMutableString *urlEncodedString = [NSMutableString string];
     const unsigned char *source = (const unsigned char *)[string UTF8String];
     int sourceLen = strlen((const char *)source);
+    
     for (int i = 0; i < sourceLen; ++i) {
         const unsigned char thisChar = source[i];
         if (thisChar == ' '){
             [urlEncodedString appendString:@"\%20"];
-        } else if (thisChar == '.' || thisChar == '-' || thisChar == '_' || thisChar == '~' ||
+        }
+        else if (thisChar == '.' || thisChar == '-' || thisChar == '_' || thisChar == '~' ||
                    (thisChar >= 'a' && thisChar <= 'z') ||
                    (thisChar >= 'A' && thisChar <= 'Z') ||
                    (thisChar >= '0' && thisChar <= '9')) {
             [urlEncodedString appendFormat:@"%c", thisChar];
-        } else {
+        }
+        else {
             [urlEncodedString appendFormat:@"%%%02X", thisChar];
         }
     }
+    
     return urlEncodedString;
 }
 
 - (void)executeData {
-    if ([NSThread isMainThread]) {
-        [NSException raise:@"must be non-main thread" format:@"should parse on non-main thread"];
-    }
+    NSAssert(![NSThread isMainThread], @"Expected data function to be called on Background Thread");
+
     if (self.dataBlock) {
         self.dataObject = self.dataBlock(self.connectionData);
     }
@@ -383,9 +386,7 @@ static NSString * const BoundaryString = @"Data-Boundary-aWeGhdCVFFfsdrf";
 }
 
 - (void)executeParse {
-    if ([NSThread isMainThread]) {
-        [NSException raise:@"must be non-main thread" format:@"should parse on non-main thread"];
-    }
+    NSAssert(![NSThread isMainThread], @"Expected parse function to be called on Background Thread");
     
     self.resultObjects = self.parseBlock(self.dataObject);
     

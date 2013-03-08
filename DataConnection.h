@@ -37,10 +37,22 @@ typedef void(^CompletionBlock)(id c);
 typedef void(^ProgressBlock)(float progress);
 
 
-
+/**
+ DataConnection
+ 
+ A subclass of NSURLConnection providing block based interfaces for making requests.
+ */
 @interface DataConnection : NSURLConnection <NSURLConnectionDataDelegate, NSURLConnectionDelegate>
 
+/**
+ The raw Data received by the connection.
+ This is the instance to which data is appended by connectionDidReceiveData:
+ */
 @property (nonatomic, readonly) NSMutableData   *connectionData;
+
+/**
+ An NSString representation of the URL
+ */
 @property (nonatomic, readonly) NSString        *urlString;
 
 /**-----
@@ -49,9 +61,9 @@ typedef void(^ProgressBlock)(float progress);
  */
 
 /**
- the dataBlock is executed, in which case dataObject gets set by
- the dataBlock's return value.
- if no dataBlock is set, we try to serialize the data as json
+ The dataBlock is executed, in which case dataObject gets set by
+ The dataBlock's return value.
+ If no dataBlock is set, we try to serialize the data as json
  */
 @property (copy)                DataBlock       dataBlock;
 @property (atomic, readonly)    id              dataObject;
@@ -62,7 +74,7 @@ typedef void(^ProgressBlock)(float progress);
  */
 
 /**
- parse block is executed in which case resultObjects gets set by the parseBlock's return value
+ Parse block is executed in which case resultObjects gets set by the parseBlock's return value
  */
 @property (copy)                ParseBlock      parseBlock;
 @property (atomic, readonly)    NSArray         *resultObjects;
@@ -73,7 +85,7 @@ typedef void(^ProgressBlock)(float progress);
  */
 
 /**
- the completion block is executed at the very end on the main thread
+ The completion block is executed at the very end on the main thread
  @param The block is passed a connection. For subclassing compatability it is defined as an id.
  */
 @property (copy)                CompletionBlock completionBlock;
@@ -81,15 +93,19 @@ typedef void(^ProgressBlock)(float progress);
 
 /**-----
  * @name Progress Block
+ *------
  */
 
 /**
- the progress block is called for every progress invocation on uploading data
+ The progress block is called for every progress invocation on uploading data
  */
 @property (copy)                ProgressBlock   progressBlock;
 
 
-// status
+/**-----
+ * @name Status
+ *------
+ */
 @property (readonly)            BOOL            didSucceed;
 @property (readonly)            BOOL            didFinish;
 @property (readonly)            int             httpResponseCode;
@@ -117,15 +133,34 @@ typedef void(^ProgressBlock)(float progress);
  @param urlString The Url String to which to post.
  */
 + (id)postMultipartConnectionWithUrlString:(NSString *)urlString andParams:(NSDictionary *)params;
-    
+
+/**
+ Both cancels the connection, and clears all blocks.
+ This should be called if the connection is no longer relevant (e.g. when a View Controller that issued the request has reached the end of its lifecycle
+ */
 - (void)cancelAndClear;
 
+/**
+ An NSString representation of the response. This should be called only after a connection has finished. The behavior of this function at any other point in time is undefined.
+ */
 - (NSString *)responseString;
 
+/**
+ @return Whether the connection is a POST connection
+ */
 - (BOOL)isPostConnection;
 
+/**
+ Cleanup will be called automatically after the connection has successfully completed, or when cancelOrClear was called.
+ This is exposed only to be overridden by a subclass (with a call to super), which may want to do additional things on cleanup (i.e. unset a global activity indicator, such as the network indicator).
+ This method should never be called directly. 
+ */
 - (void)cleanup;
 
+/**
+ @param string The String to be encoded
+ @return A url Encoded NSString representation
+ */
 + (NSString *)urlEncodedString:(NSString *)string;
 
 @end
@@ -134,6 +169,8 @@ typedef void(^ProgressBlock)(float progress);
 /**
  An Object only has to conform to PostableData if it is passed into DataConnection
  as part of an NSDictionary.
+ 
+ If you pass data to one of the data constructors, you need not worry about the object conforming to this.
  */
 @protocol PostableData <NSObject>
 

@@ -155,6 +155,11 @@ typedef void(^ProgressBlock)(float progress);
 - (BOOL)isPostConnection;
 
 /**
+ @return Whether the connection is a GET connection
+ */
+- (BOOL)isGetConnection;
+
+/**
  Cleanup will be called automatically after the connection has successfully completed, or when cancelOrClear was called.
  This is exposed only to be overridden by a subclass (with a call to super), which may want to do additional things on cleanup (i.e. unset a global activity indicator, such as the network indicator).
  This method should never be called directly. 

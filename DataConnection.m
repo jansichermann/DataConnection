@@ -446,4 +446,8 @@ NSString * const HTTPMethodDelete = @"DELETE";
 - (BOOL)isPostConnection {
     return [self.currentRequest.HTTPMethod isEqualToString:HTTPMethodPost];
 }
+
+- (BOOL)isGetConnection {
+    return [self.currentRequest.HTTPMethod isEqualToString:HTTPMethodGet];
+}
 @end

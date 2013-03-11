@@ -29,6 +29,9 @@ extern NSString * const MimeTypeJson;
 extern NSString * const MimeTypeForm;
 extern NSString * const MimeTypeFormData;
 
+extern NSString * const HTTPMethodPost;
+extern NSString * const HTTPMethodGet;
+extern NSString * const HTTPMethodDelete;
 
 
 typedef NSArray *(^ParseBlock)(id dataObject);

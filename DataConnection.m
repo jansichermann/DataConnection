@@ -25,7 +25,12 @@ NSString * const MimeTypeImage = @"image/jpeg";
 NSString * const MimeTypeJson = @"application/json";
 NSString * const MimeTypeForm = @"application/x-www-form-urlencoded";
 NSString * const MimeTypeFormData = @"multipart/form-data; boundary=";
+
 static NSString * const BoundaryString = @"Data-Boundary-aWeGhdCVFFfsdrf";
+
+NSString * const HTTPMethodPost = @"POST";
+NSString * const HTTPMethodGet = @"GET";
+NSString * const HTTPMethodDelete = @"DELETE";
 
 
 
@@ -220,7 +225,7 @@ static NSString * const BoundaryString = @"Data-Boundary-aWeGhdCVFFfsdrf";
 
 + (DataConnection *)postConnectionWithUrlString:(NSString *)urlString andData:(NSData *)data andMimeType:(NSString *)mimeType {
     NSMutableURLRequest *urlRequest = [self requestWithUrlString:urlString];
-    [urlRequest setHTTPMethod:@"POST"];
+    [urlRequest setHTTPMethod:HTTPMethodPost];
     NSString *contentLength = [NSString stringWithFormat:@"%d", data.length];
     [urlRequest setValue:mimeType forHTTPHeaderField:@"Content-Type"];
     [urlRequest setValue:contentLength forHTTPHeaderField:@"Content-Length"];
@@ -244,7 +249,7 @@ static NSString * const BoundaryString = @"Data-Boundary-aWeGhdCVFFfsdrf";
 
 + (DataConnection *)postMultipartConnectionWithUrlString:(NSString *)urlString andParams:(NSDictionary *)params {
     NSMutableURLRequest *urlRequest = [self requestWithUrlString:urlString];
-    [urlRequest setHTTPMethod:@"POST"];
+    [urlRequest setHTTPMethod:HTTPMethodPost];
     NSData *dataForParams = [self multipartDataForParams:params];
     
     NSString *mimeType = MimeTypeFormData;
@@ -261,7 +266,7 @@ static NSString * const BoundaryString = @"Data-Boundary-aWeGhdCVFFfsdrf";
 + (DataConnection *)postConnectionWithUrlString:(NSString *)urlString andParams:(NSDictionary *)params {
     
     NSMutableURLRequest *urlRequest = [self requestWithUrlString:urlString];
-    [urlRequest setHTTPMethod:@"POST"];
+    [urlRequest setHTTPMethod:HTTPMethodPost];
     
     NSData *dataForParams = [self postBodyWithParameters:params];
     
@@ -431,6 +436,6 @@ static NSString * const BoundaryString = @"Data-Boundary-aWeGhdCVFFfsdrf";
 }
 
 - (BOOL)isPostConnection {
-    return [self.currentRequest.HTTPMethod isEqualToString:@"POST"];
+    return [self.currentRequest.HTTPMethod isEqualToString:HTTPMethodPost];
 }
 @end

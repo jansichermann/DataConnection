@@ -89,7 +89,7 @@ typedef void(^ProgressBlock)(float progress);
 
 /**
  The completion block is executed at the very end on the main thread
- @param The block is passed a connection. For subclassing compatability it is defined as an id.
+ The block is passed a connection. For subclassing compatability it is defined as an id.
  */
 @property (copy)                CompletionBlock completionBlock;
 

@@ -122,6 +122,7 @@ typedef void(^ProgressBlock)(float progress);
 + (NSMutableURLRequest *)requestWithUrlString:(NSString *)urlString;
 + (id)withURLString:(NSString *)urlString;
 + (id)postConnectionWithUrlString:(NSString *)urlString andData:(NSData *)data andMimeType:(NSString *)mimeType;
++ (id)deleteConnectionWithUrlString:(NSString *)urlString;
 
 /**
  A POST request initializer. Depending on the params being passed in, this becomes either an x-www-form-urlencoded or a multipart/form-data form.

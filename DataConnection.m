@@ -235,6 +235,14 @@ NSString * const HTTPMethodDelete = @"DELETE";
     return c;
 }
 
++ (DataConnection *)deleteConnectionWithUrlString:(NSString *)urlString {
+    NSMutableURLRequest *urlRequest = [self requestWithUrlString:urlString];
+    [urlRequest setHTTPMethod:HTTPMethodDelete];
+    DataConnection *c = [[self alloc] initWithRequest:urlRequest];
+    c.urlString = urlString;
+    return c;
+}
+
 + (NSString *)mimeTypeForParams:(NSDictionary *)params {
     for (id val in params.allValues) {
         if (![val isKindOfClass:[NSString class]])

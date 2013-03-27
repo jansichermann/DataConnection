@@ -26,6 +26,7 @@
                toData:(NSMutableData *)data
   withContentTypeData:(NSData *)contentTypeData
   andContentDispoData:(NSData *)contentDispoData;
+@property (nonatomic, readwrite) NSMutableData *connectionData;
 @end
 
 @interface DataConnectionTest ()
@@ -66,6 +67,49 @@ static NSString * const hostBase = @"http://localhost";
     NSData *stringData = [string dataUsingEncoding:NSUTF8StringEncoding];
     NSMutableData *mutableData = [NSMutableData data];
     [DataConnection addObjectData:stringData toData:mutableData withContentTypeData:nil andContentDispoData:nil];
+}
+
+- (void)testDidFail {
+    DataConnection *dc = [DataConnection withURLString:@"http://google.com"];
+    __block int testint = 0;
+    
+    dc.completionBlock = ^(DataConnection *c) {
+        testint = 1;
+    };
+    
+    [dc connection:dc didFailWithError:nil];
+    STAssertEquals(testint, 1, @"Expected completion block to be executed");
+    
+    STAssertTrue(dc.didFinish, @"Expected connection to be finished");
+    STAssertFalse(dc.didSucceed, @"Expected connection to not have succeeded");
+    STAssertFalse(dc.inProgress, @"Expected connection to no longer be in progress");
+}
+
+- (void)testDidFinishLoading {
+    DataConnection *dc = [DataConnection withURLString:@"http://google.com"];
+    NSString *testString = [NSString stringWithFormat:@"Hello World"];
+    dc.connectionData = [NSMutableData dataWithData:[testString dataUsingEncoding:NSUTF8StringEncoding]];
+    
+    __block BOOL done = NO;
+    dc.dataBlock = ^id(NSData *d) {
+        NSString *string = [[NSString alloc] initWithData:d encoding:NSUTF8StringEncoding];
+        return string;
+    };
+    dc.completionBlock = ^(DataConnection *c) {
+        STAssertEqualObjects(c.dataObject, testString, @"Expected objects to match");
+        done = YES;
+    };
+    
+    [dc connectionDidFinishLoading:dc];
+    
+    // We do this to prevent the process from quitting before the blocks are executed
+    NSRunLoop *rl = [NSRunLoop currentRunLoop];
+    while (!done && [rl runMode:NSDefaultRunLoopMode beforeDate:[NSDate distantFuture]]);
+
+
+    STAssertTrue(dc.didFinish, @"Expected connection to be finished");
+    STAssertTrue(dc.didSucceed, @"Expected connection to not have succeeded");
+    STAssertFalse(dc.inProgress, @"Expected connection to no longer be in progress");
 }
 
 @end

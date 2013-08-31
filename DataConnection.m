@@ -44,6 +44,7 @@ NSString * const HTTPMethodDelete = @"DELETE";
 
 @property (readwrite)               BOOL            didSucceed;
 @property (readwrite)               BOOL            didFinish;
+@property (readwrite)               BOOL            didExecuteCompletion;
 @property (readwrite)               int             httpResponseCode;
 @property (readwrite)               NSError         *error;
 @property (readwrite)               BOOL            inProgress;
@@ -61,6 +62,7 @@ NSString * const HTTPMethodDelete = @"DELETE";
     self.didSucceed = NO;
     self.httpResponseCode = -1;
     self.inProgress = YES;
+    self.didExecuteCompletion = NO;
     [super start];
 }
 
@@ -78,7 +80,6 @@ NSString * const HTTPMethodDelete = @"DELETE";
 
 + (DataConnection *)withURLString:(NSString *)urlString {
     NSMutableURLRequest *mr = [self requestWithUrlString:urlString];
-    mr.timeoutInterval = 20.f;
     mr.HTTPShouldUsePipelining = YES;
     mr.cachePolicy = NSURLRequestReturnCacheDataElseLoad;
     DataConnection *c = [self withRequest:mr];
@@ -251,6 +252,7 @@ NSString * const HTTPMethodDelete = @"DELETE";
     return MimeTypeForm;
 }
 
+#pragma clang diagnostic ignored "-Wunused-parameter"
 + (NSString *)contentTypeForParams:(NSDictionary *)params {
     return [NSString stringWithFormat:@"%@%@", MimeTypeFormData, BoundaryString];
 }
@@ -319,7 +321,8 @@ NSString * const HTTPMethodDelete = @"DELETE";
     return nil;
 }
 
-- (void)connection:(NSURLConnection *)connection didFailWithError:(NSError *)error {
+- (void)connection:(NSURLConnection *)connection
+  didFailWithError:(NSError *)error {
     self.inProgress = NO;
     self.error = error;
     self.didSucceed = NO;
@@ -356,9 +359,9 @@ NSString * const HTTPMethodDelete = @"DELETE";
 + (NSString *)urlEncodedString:(NSString *)string {
     NSMutableString *urlEncodedString = [NSMutableString string];
     const unsigned char *source = (const unsigned char *)[string UTF8String];
-    int sourceLen = strlen((const char *)source);
+    unsigned int sourceLen = strlen((const char *)source);
     
-    for (int i = 0; i < sourceLen; ++i) {
+    for (unsigned int i = 0; i < sourceLen; ++i) {
         const unsigned char thisChar = source[i];
         if (thisChar == ' '){
             [urlEncodedString appendString:@"\%20"];
@@ -415,6 +418,7 @@ NSString * const HTTPMethodDelete = @"DELETE";
     if (self.completionBlock) {
         self.completionBlock(self);
     }
+    self.didExecuteCompletion = YES;
     [self cleanup];
 }
 
@@ -434,7 +438,6 @@ NSString * const HTTPMethodDelete = @"DELETE";
     self.dataObject = nil;
     
     self.parseBlock = nil;
-    self.resultObjects = nil;
     
     self.completionBlock = nil;
 }

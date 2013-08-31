@@ -111,6 +111,7 @@ typedef void(^ProgressBlock)(float progress);
  */
 @property (readonly)            BOOL            didSucceed;
 @property (readonly)            BOOL            didFinish;
+@property (readonly)            BOOL            didExecuteCompletion;
 @property (readonly)            int             httpResponseCode;
 @property (readonly)            NSError         *error;
 @property (readonly)            BOOL            inProgress;

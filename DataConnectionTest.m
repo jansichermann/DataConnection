@@ -21,17 +21,27 @@
 #import "DataConnection.h"
 
 @interface DataConnection()
+
 + (NSData *)multipartDataForParams:(NSDictionary *)params;
+
 + (void)addObjectData:(NSData *)objectData
                toData:(NSMutableData *)data
   withContentTypeData:(NSData *)contentTypeData
   andContentDispoData:(NSData *)contentDispoData;
+
 @property (nonatomic, readwrite) NSMutableData *connectionData;
+
 @end
 
+
+
 @interface DataConnectionTest ()
+
 @property DataConnection *dc;
+
 @end
+
+
 
 @implementation DataConnectionTest
 

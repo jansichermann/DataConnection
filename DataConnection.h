@@ -173,6 +173,13 @@ typedef void(^ProgressBlock)(float progress);
  */
 + (NSString *)urlEncodedString:(NSString *)string;
 
+
+/**
+ @param request The request to be altered
+ @return The request that will be used for the connection
+ @discussion This is a method that can be overridden by subclasses in order to alter a mutable request, just before a connection is initialized with it. Examples include setting certain settings or headers, based on the values of other properties of the request. 
+ */
+- (NSURLRequest *)requestForMutableUrlRequest:(NSMutableURLRequest *)request;
 @end
 
 

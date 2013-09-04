@@ -70,8 +70,17 @@ NSString * const HTTPMethodDelete = @"DELETE";
     return [NSMutableURLRequest requestWithURL:[NSURL URLWithString:urlString]];
 }
 
+- (NSURLRequest *)requestForMutableUrlRequest:(NSMutableURLRequest *)request {
+    return request.copy;
+}
+
 - (DataConnection *)initWithRequest:(NSURLRequest *)request {
-    self = [super initWithRequest:request delegate:self startImmediately:NO];
+    if ([request isKindOfClass:[NSMutableURLRequest class]]) {
+        request = [self requestForMutableUrlRequest:(NSMutableURLRequest *)request];
+    }
+    self = [super initWithRequest:request
+                         delegate:self
+                 startImmediately:NO];
     if (self) {
         self.connectionData = [NSMutableData data];
     }
